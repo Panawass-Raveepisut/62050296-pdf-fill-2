@@ -1,0 +1,216 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fill RE05 Form</title>
+</head>
+<body>
+  <h1>Fill RE05 Form</h1>
+  <form id="form" method="POST" action="/submit-re05">
+    <label>Date: <input type="date" name="date" required></label><br>
+    <label>Name: <input type="text" name="name" required></label><br>
+    <label>Student ID: <input type="number" name="studentId" required></label><br>
+    <label>Faculty: <input type="text" name="faculty" required></label><br>
+    <label>Phone: <input type="text" name="phone" required></label><br>
+    <label>Major: <input type="text" name="major" required></label><br>
+    <label>Reason for Late Registration: <textarea name="reason" required></textarea></label><br>
+    <label>Course Code: <input type="text" name="courseCode" required></label><br>
+    <label>Section: <input type="text" name="section" required></label><br>
+    <label>Course Name: <input type="text" name="courseName" required></label><br>
+    <label>Credits: <input type="number" name="credits" required></label><br>
+    <label>Instructor: <input type="text" name="instructor" required></label><br>
+
+    <label>Signature:</label>
+    <button type="button" onclick="openSignaturePad()">Sign Here</button><br><br>
+    
+    <canvas id="signaturePad" style="border: 1px solid black; display:none;"></canvas><br>
+    <button type="submit">Submit</button>
+  </form>
+
+  <script>
+    const canvas = document.getElementById('signaturePad');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+
+    function openSignaturePad() {
+      canvas.style.display = 'block';
+      canvas.width = 400;
+      canvas.height = 200;
+      canvas.addEventListener('mousedown', startDraw);
+      canvas.addEventListener('mouseup', endDraw);
+      canvas.addEventListener('mousemove', draw);
+    }
+
+    function startDraw(e) { drawing = true; draw(e); }
+    function endDraw() { drawing = false; ctx.beginPath(); }
+    function draw(e) {
+      if (!drawing) return;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'black';
+      ctx.lineTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+    }
+
+    document.getElementById('form').addEventListener('submit', function() {
+      const signatureData = canvas.toDataURL();
+      const signatureInput = document.createElement('input');
+      signatureInput.type = 'hidden';
+      signatureInput.name = 'studentSignature';
+      signatureInput.value = signatureData;
+      document.getElementById('form').appendChild(signatureInput);
+    });
+  </script>
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fill RE05 Form</title>
+  <style>
+    #signaturePad {
+      border: 1px solid black;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Fill RE05 Form</h1>
+  <form id="form" method="POST" action="/submit-re05">
+    <!-- วันที่ -->
+    <label>วันที่: 
+      <select id="day" required>
+        <option value="">วัน</option>
+      </select>
+      <select id="month" required>
+        <option value="">เดือน</option>
+      </select>
+      <select id="year" required>
+        <option value="">ปี</option>
+      </select>
+      <input type="hidden" id="formattedDate" name="date">
+    </label><br>
+
+    <!-- ฟิลด์ข้อมูลส่วนตัว -->
+    <label>Name: <input type="text" name="name" required></label><br>
+    <label>Student ID: <input type="number" name="studentId" required></label><br>
+    <label>Faculty: <input type="text" name="faculty" required></label><br>
+    <label>Phone: <input type="text" name="phone" required></label><br>
+    <label>Major: <input type="text" name="major" required></label><br>
+    <label>Reason for Late Registration: <textarea name="reason" required></textarea></label><br>
+    <label>Course Code: <input type="text" name="courseCode" required></label><br>
+    <label>Section: <input type="text" name="section" required></label><br>
+    <label>Course Name: <input type="text" name="courseName" required></label><br>
+    <label>Credits: <input type="number" name="credits" required></label><br>
+    <label>Instructor: <input type="text" name="instructor" required></label><br>
+
+    <!-- ลายเซ็น -->
+    <label>Signature:</label><br>
+    <button type="button" onclick="openSignaturePad()">Sign Here</button><br><br>
+    <canvas id="signaturePad" style="border: 1px solid black; display:none;"></canvas><br>
+    <button type="button" onclick="clearSignature()">Clear Signature</button>
+    <button type="button" onclick="saveSignature()">Save Signature</button><br><br>
+
+    <button type="submit">Submit</button>
+  </form>
+
+  <script>
+    // สร้างตัวเลือกวัน
+    const daySelect = document.getElementById('day');
+    for (let i = 1; i <= 31; i++) {
+      const option = document.createElement('option');
+      option.value = i.toString().padStart(2, '0');
+      option.textContent = i;
+      daySelect.appendChild(option);
+    }
+
+    // สร้างตัวเลือกเดือน
+    const monthSelect = document.getElementById('month');
+    for (let i = 1; i <= 12; i++) {
+      const option = document.createElement('option');
+      option.value = i.toString().padStart(2, '0');
+      option.textContent = i;
+      monthSelect.appendChild(option);
+    }
+
+    // สร้างตัวเลือกปี (ตั้งแต่ปีปัจจุบันย้อนหลังไป 100 ปี)
+    const yearSelect = document.getElementById('year');
+    const currentYear = new Date().getFullYear();
+    for (let i = currentYear; i >= currentYear - 100; i--) {
+      const option = document.createElement('option');
+      option.value = i;
+      option.textContent = i;
+      yearSelect.appendChild(option);
+    }
+
+    // การจัดการลายเซ็น
+    const canvas = document.getElementById('signaturePad');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+
+    function openSignaturePad() {
+      canvas.style.display = 'block';
+      canvas.width = 400;
+      canvas.height = 200;
+      canvas.addEventListener('mousedown', startDraw);
+      canvas.addEventListener('mouseup', endDraw);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseout', endDraw); // หากเมาส์ออกจาก canvas ให้หยุดการวาด
+    }
+
+    function startDraw(e) {
+      drawing = true;
+      draw(e);
+    }
+
+    function endDraw() {
+      drawing = false;
+      ctx.beginPath();
+    }
+
+    function draw(e) {
+      if (!drawing) return;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'black';
+      
+      ctx.lineTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+    }
+
+    function clearSignature() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height); // ล้างลายเซ็น
+    }
+
+    function saveSignature() {
+      const signatureData = canvas.toDataURL();
+      const signatureInput = document.createElement('input');
+      signatureInput.type = 'hidden';
+      signatureInput.name = 'studentSignature';
+      signatureInput.value = signatureData;
+      document.getElementById('form').appendChild(signatureInput);
+    }
+
+    // เมื่อกด submit จะรวมวันที่เป็นฟอร์แมต dd-mm-yyyy และเก็บใน input ที่ซ่อนอยู่
+    document.getElementById('form').addEventListener('submit', function(event) {
+      const day = document.getElementById('day').value;
+      const month = document.getElementById('month').value;
+      const year = document.getElementById('year').value;
+
+      if (day && month && year) {
+        const formattedDate = `${day}/${month}/${year}`;
+        document.getElementById('formattedDate').value = formattedDate;
+      }
+    });
+
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fill Form</title>
+  <style>
+    #signatureModal {
+      display: none; 
+      position: fixed; 
+      z-index: 1000;
+      left: 0; 
+      top: 0; 
+      width: 100%; 
+      height: 100%; 
+      background-color: rgba(0,0,0,0.5); 
+      justify-content: center; 
+      align-items: center; 
+    }
+
+    #signaturePad {
+      border: 1px solid #ccc;
+      width: 400px;
+      height: 200px;
+      background: white;
+    }
+    
+    .modal-content {
+      background-color: #fff; 
+      padding: 20px; 
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Fill RE01 Form</h1>
+  <form id="form" method="POST" action="/submit-re01">
+    <label>วันที่: 
+      <select id="day" required>
+        <option value="">วัน</option>
+      </select>
+      <select id="month" required>
+        <option value="">เดือน</option>
+      </select>
+      <select id="year" required>
+        <option value="">ปี</option>
+      </select>
+      <input type="hidden" id="formattedDate" name="date">
+    </label><br>
+
+    <label>เรื่อง (Subject): <input type="text" name="subject" required></label><br>
+    <label>เรียน (To): <input type="text" name="to" required></label><br>
+    <label>ชื่อ-สกุล: <input type="text" name="fullname" required></label><br>
+    <label>คณะ: <input type="text" name="faculty" required></label><br>
+    <label>รหัสประจำตัว: <input type="number" name="studentId" required></label><br>
+    <label>สาขาวิชา: <input type="text" name="major" required></label><br>
+    <label>หมายเลขโทรศัพท์: <input type="text" name="phone" required></label><br>
+    <label>วิชาโท: <input type="text" name="minor" required></label><br>
+    <label>ที่อยู่ปัจจุบัน: <input type="text" name="address" required></label><br>
+    <label>อีเมล: <input type="email" name="email" required></label><br>
+    <label>ระบุเหตุผลคำร้อง: <textarea name="reason" required></textarea></label><br>
+
+    <label>ลายเซ็น:</label>
+    <button type="button" id="openSignatureModal">เซ็นที่นี่</button><br><br>
+
+    <button type="submit">Submit</button>
+  </form>
+
+  <div id="signatureModal">
+    <div class="modal-content">
+      <h2>ลายเซ็น</h2>
+      <canvas id="signaturePad"></canvas><br>
+      <button type="button" id="clearSignature">ล้างลายเซ็น</button><br>
+      <button type="button" id="closeSignatureModal">เสร็จสิ้น</button>
+    </div>
+  </div>
+
+  <script>
+    // สร้างตัวเลือกวัน
+    const daySelect = document.getElementById('day');
+    for (let i = 1; i <= 31; i++) {
+      const option = document.createElement('option');
+      option.value = i.toString().padStart(2, '0');
+      option.textContent = i;
+      daySelect.appendChild(option);
+    }
+
+    // สร้างตัวเลือกเดือน
+    const monthSelect = document.getElementById('month');
+    for (let i = 1; i <= 12; i++) {
+      const option = document.createElement('option');
+      option.value = i.toString().padStart(2, '0');
+      option.textContent = i;
+      monthSelect.appendChild(option);
+    }
+
+    // สร้างตัวเลือกปี (ตั้งแต่ปีปัจจุบันย้อนหลังไป 100 ปี)
+    const yearSelect = document.getElementById('year');
+    const currentYear = new Date().getFullYear();
+    for (let i = currentYear; i >= currentYear - 100; i--) {
+      const option = document.createElement('option');
+      option.value = i;
+      option.textContent = i;
+      yearSelect.appendChild(option);
+    }
+
+    // การจัดการลายเซ็น
+    const canvas = document.getElementById('signaturePad');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+
+    canvas.addEventListener('mousedown', () => { drawing = true; });
+    canvas.addEventListener('mouseup', () => { drawing = false; ctx.beginPath(); });
+    canvas.addEventListener('mousemove', draw);
+    
+    document.getElementById('clearSignature').addEventListener('click', clearSignature);
+
+    function draw(event) {
+      if (!drawing) return;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'black';
+
+      ctx.lineTo(event.clientX - canvas.offsetLeft, event.clientY - canvas.offsetTop);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(event.clientX - canvas.offsetLeft, event.clientY - canvas.offsetTop);
+    }
+
+    function clearSignature() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // เปิด modal เพื่อให้เซ็น
+    document.getElementById('openSignatureModal').addEventListener('click', () => {
+      document.getElementById('signatureModal').style.display = 'flex';
+    });
+
+    // ปิด modal และบันทึกลายเซ็น
+    document.getElementById('closeSignatureModal').addEventListener('click', () => {
+      const signatureDataUrl = canvas.toDataURL();
+      const hiddenSignatureInput = document.createElement('input');
+      hiddenSignatureInput.type = 'hidden';
+      hiddenSignatureInput.name = 'signature';
+      hiddenSignatureInput.value = signatureDataUrl;
+      document.getElementById('form').appendChild(hiddenSignatureInput);
+
+      document.getElementById('signatureModal').style.display = 'none';
+    });
+
+    // เมื่อกด submit จะรวมวันที่เป็นฟอร์แมต dd-mm-yyyy และเก็บใน input ที่ซ่อนอยู่
+    document.getElementById('form').addEventListener('submit', function(event) {
+      const day = document.getElementById('day').value;
+      const month = document.getElementById('month').value;
+      const year = document.getElementById('year').value;
+      
+      if (day && month && year) {
+        const formattedDate = `${day}/${month}/${year}`;
+        document.getElementById('formattedDate').value = formattedDate;
+      }
+    });
+  </script>
+</body>
+</html>
